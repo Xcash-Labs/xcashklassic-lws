@@ -27,7 +27,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.5.0)
-project(monero-lws)
+project(xcashklassic-lws)
 
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 17)
@@ -120,7 +120,7 @@ if (MONERO_BUILD_DIR)
 
   # Needed due to "bug" in monero CMake - the `project` function is used twice!
   if (NOT MONERO_SOURCE_DIR)
-    message(FATAL_ERROR "The argument -DMONERO_SOURCE_DIR must specify a location of a monero source tree")
+    message(FATAL_ERROR "The argument -DMONERO_SOURCE_DIR must specify a location of the XCash Klassic core source tree")
   endif()
 
   # monero `master` and `release-v0.18` branches use different LIBSODIUM
@@ -188,7 +188,7 @@ if (MONERO_BUILD_DIR)
   set(LMDB_LIB_PATH "monero::lmdb")
 else () # NOT MONERO_BUILD_DIR
   if (NOT MONERO_SOURCE_DIR)
-    set (MONERO_SOURCE_DIR "${monero-lws_SOURCE_DIR}/external/monero")
+    set (MONERO_SOURCE_DIR "${xcashklassic-lws_SOURCE_DIR}/external/monero")
   endif ()
 
   include(FetchContent)
