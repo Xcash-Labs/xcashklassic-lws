@@ -1,3 +1,4 @@
 [submodule "external/monero"]
 	path = external/monero
-	url = 	url = https://github.com/Xcash-Labs/xcash-labs-core.git
+	url = https://github.com/Xcash-Labs/xcash-labs-core.git
+	branch = master
