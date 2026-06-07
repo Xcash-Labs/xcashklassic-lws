@@ -60,6 +60,7 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "common/error.h"          // monero/src
 #include "common/expect.h"         // monero/src
@@ -992,7 +993,7 @@ namespace lws
             rpc::safe_uint64(received),
             to_uint(user->first.lookahead_fail),
             std::move(unspent),
-            rpc->fees,
+            std::vector<std::uint64_t>{rpc->estimated_base_fee},
             std::move(req.creds.key)
           }
         );
