@@ -57,9 +57,9 @@ boost::optional<std::pair<std::uint64_t, rct::key>> lws::decode_amount(const rct
   rct::addKeys2(Ctmp, copy.mask, copy.amount, rct::H);
   if (rct::equalKeys(commitment, Ctmp))
   {
-    rct::xmr_amount out = 0;
-    if (rct::h2d(out, copy.amount))
-      return {{out, copy.mask}};
+    const rct::xmr_amount out = rct::h2d(copy.amount);
+    return {{out, copy.mask}};
   }
+
   return boost::none;
 }
