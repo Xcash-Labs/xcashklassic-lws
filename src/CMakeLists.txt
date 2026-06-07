@@ -98,6 +98,9 @@ target_link_libraries(monero-lws-daemon-common
 )
 
 add_executable(monero-lws-daemon server_main.cpp)
+set_target_properties(monero-lws-daemon PROPERTIES
+  OUTPUT_NAME "xcashklassic-lws-daemon"
+)
 target_link_libraries(monero-lws-daemon
   PRIVATE
     monero::libraries
