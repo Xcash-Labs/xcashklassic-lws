@@ -335,7 +335,7 @@ namespace rpc
     const std::string last_git_commit_hash;
     const std::string last_git_commit_date;
     const std::string git_branch_name;
-    const std::string monero_version_full;
+    const std::string xcash_version_full;
 
     const db::block_id blockchain_height;
     const std::uint32_t api;
