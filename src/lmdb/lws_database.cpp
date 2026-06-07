@@ -69,6 +69,8 @@ namespace lws_lmdb
         environment out{obj};
 
         MONERO_LMDB_CHECK(mdb_env_set_maxdbs(out.get(), max_dbs));
+        constexpr const mdb_size_t initial_mapsize = 100ull * 1024ull * 1024ull * 1024ull; // 100 GB virtual map
+        MONERO_LMDB_CHECK(mdb_env_set_mapsize(out.get(), initial_mapsize));
         MONERO_LMDB_CHECK(mdb_env_open(out.get(), path, 0, open_flags));
         return {std::move(out)};
     }
