@@ -1,172 +1,201 @@
-# monero-lws
+# xcashklassic-lws
 
-> This project is **NOT** a part of the official monero "core" code, but will
-> hopefully be merged into that project as a new repository separate from the
-> [`monero-project/monero`](https://github.com/monero-project/monero)
-> repository.
+`xcashklassic-lws` is an XCash Klassic adaptation of `monero-lws`, a light wallet server implementation based on the Monero light-wallet REST API.
+
+This project is separate from `xcash-labs-core`. It uses `xcash-labs-core` as a build dependency through the `external/monero` submodule path. The folder name is kept for compatibility with the upstream `monero-lws` CMake layout, but the submodule should point to:
+
+```text
+https://github.com/Xcash-Labs/xcash-labs-core.git
+```
 
 ## Table of Contents
 
-  - [Introduction](#introduction)
-  - [About this project](#about-this-project)
-  - [License](#license)
-  - [Docker](#docker)
-  - [Compiling Monero-lws from source](#compiling-monero-lws-from-source)
-
+- [Introduction](#introduction)
+- [About this project](#about-this-project)
+- [Repository layout](#repository-layout)
+- [Dependencies](#dependencies)
+- [Build instructions](#build-instructions)
+- [Running xcashklassic-lws](#running-xcashklassic-lws)
+- [License](#license)
 
 ## Introduction
 
-Monero is a private, secure, untraceable, decentralised digital currency. You are your bank, you control your funds, and nobody can trace your transfers unless you allow them to do so.
+XCash Klassic is a CryptoNote-based blockchain derived from Monero technology. This repository provides a light wallet server layer for XCash Klassic so compatible wallets or services can submit wallet view information and have the server scan the blockchain for wallet activity.
 
-**Privacy:** Monero uses a cryptographically sound system to allow you to send and receive funds without your transactions being easily revealed on the blockchain (the ledger of transactions that everyone has). This ensures that your purchases, receipts, and all transfers remain absolutely private by default.
-
-**Security:** Using the power of a distributed peer-to-peer consensus network, every transaction on the network is cryptographically secured. Individual wallets have a 25 word mnemonic seed that is only displayed once, and can be written down to backup the wallet. Wallet files are encrypted with a passphrase to ensure they are useless if stolen.
-
-**Untraceability:** By taking advantage of ring signatures, a special property of a certain type of cryptography, Monero is able to ensure that transactions are not only untraceable, but have an optional measure of ambiguity that ensures that transactions cannot easily be tied back to an individual user or computer.
-
-**Decentralization:** The utility of monero depends on its decentralised peer-to-peer consensus network - anyone should be able to run the monero software, validate the integrity of the blockchain, and participate in all aspects of the monero network using consumer-grade commodity hardware. Decentralization of the monero network is maintained by software development that minimizes the costs of running the monero software and inhibits the proliferation of specialized, non-commodity hardware.
-
+The goal is to provide an XCash Klassic-compatible light wallet server while preserving as much of the upstream `monero-lws` structure as possible.
 
 ## About this project
 
-This is an implementation of the [Monero light-wallet REST API](https://github.com/monero-project/meta/blob/master/api/lightwallet_rest.md)
-(i.e. MyMonero compatible). Clients can submit their Monero viewkey via the REST
-API, and the server will scan for incoming Monero blockchain transactions.
+This project is based on `monero-lws`, which implements the Monero light-wallet REST API. The original project supports MyMonero-style clients and scans blockchain data for wallets whose view keys are registered with the server.
 
-Differences from [OpenMonero](https://github.com/moneroexamples/openmonero):
-  - LMDB instead of MySQL
-  - View keys stored in database - scanning occurs continuously in background
-  - Uses ZeroMQ interface to `monerod` with chain subscription ("push") support
-  - Uses amd64 ASM acceleration from Monero project, if available
-  - Supports webhook notifications, including "0-conf" notification
+Key characteristics inherited from upstream `monero-lws` include:
 
+- LMDB-backed storage
+- View keys stored in the database
+- Continuous background scanning
+- ZeroMQ daemon integration for chain subscription support
+- Optional webhook notifications
+- AMD64 ASM acceleration from the core project when available
+
+For XCash Klassic, the important build change is that `external/monero` should contain `xcash-labs-core`, not upstream Monero.
+
+## Repository layout
+
+Expected layout:
+
+```text
+xcashklassic-lws/
+  CMakeLists.txt
+  src/
+  external/
+    monero/        # XCash Labs Core submodule, kept at this path for compatibility
+  build/           # xcashklassic-lws build output
+```
+
+The `external/monero` path name is intentional. It avoids large CMake changes in the LWS project while allowing the dependency to be replaced with XCash Labs Core.
+
+## Dependencies
+
+Install the normal XCash Labs Core / Monero-style build dependencies first. `xcashklassic-lws` depends on the core project for headers, static libraries, daemon RPC/ZMQ types, LMDB support, crypto code, and related build targets.
+
+No additional special dependency is expected beyond what is needed to build `xcash-labs-core` and `monero-lws`.
+
+## Build instructions
+
+These instructions build the XCash Labs Core submodule separately first, then build `xcashklassic-lws` against that completed core build.
+
+This avoids pulling the core project into the LWS CMake process as a nested project, which can cause CMake source-directory issues.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Xcash-Labs/xcashklassic-lws.git
+cd xcashklassic-lws
+```
+
+### 2. Initialize submodules
+
+```bash
+git submodule update --init --recursive
+```
+
+Verify that `external/monero` points to XCash Labs Core:
+
+```bash
+cd external/monero
+git remote -v
+cd ../..
+```
+
+You should see:
+
+```text
+https://github.com/Xcash-Labs/xcash-labs-core.git
+```
+
+### 3. Build XCash Labs Core first
+
+From the `xcashklassic-lws` repository root:
+
+```bash
+cd external/monero
+
+mkdir -p build/Linux/master/release
+cd build/Linux/master/release
+
+cmake -DCMAKE_BUILD_TYPE=Release ../../../..
+make -j$(nproc) daemon multisig lmdb_lib
+```
+
+This creates the core build directory used by LWS:
+
+```text
+external/monero/build/Linux/master/release
+```
+
+### 4. Build xcashklassic-lws
+
+Return to the `xcashklassic-lws` repository root:
+
+```bash
+cd ~/xcashklassic-lws
+```
+
+If your repository is somewhere else, replace the path with your actual location.
+
+Then build LWS:
+
+```bash
+rm -rf build
+mkdir build
+cd build
+
+cmake -DCMAKE_BUILD_TYPE=Release \
+  -DMONERO_SOURCE_DIR=$HOME/xcashklassic-lws/external/monero \
+  -DMONERO_BUILD_DIR=$HOME/xcashklassic-lws/external/monero/build/Linux/master/release \
+  ..
+
+make -j$(nproc)
+```
+
+The resulting executables should be placed under:
+
+```text
+build/src
+```
+
+## Running xcashklassic-lws
+
+The build places the daemon binary in the `src/` subdirectory inside the LWS build directory.
+
+From the LWS build directory:
+
+```bash
+./src/monero-lws-daemon --help
+```
+
+The binary may still use the upstream `monero-lws-daemon` name until it is renamed in the project.
+
+At runtime, `xcashklassic-lws` needs to connect to a running XCash Klassic daemon. Building against a local `external/monero` source tree does not start a second node. A typical runtime layout is:
+
+```text
+xcashd                  # running XCash Klassic daemon
+xcashklassic-lws daemon # connects to xcashd over RPC/ZMQ
+wallet clients          # connect to the LWS service
+```
+
+Check available runtime options with:
+
+```bash
+./src/monero-lws-daemon --help
+```
+
+## Notes for maintainers
+
+If the `external/monero` submodule needs to be reset to XCash Labs Core master:
+
+```bash
+git submodule deinit -f external/monero
+git rm -f external/monero
+rm -rf .git/modules/external/monero
+
+git submodule add -b master https://github.com/Xcash-Labs/xcash-labs-core.git external/monero
+git submodule update --init --recursive
+```
+
+On Windows CMD, replace the `rm -rf` command with:
+
+```cmd
+rmdir /s /q .git\modules\external\monero
+```
+
+Then commit the submodule configuration and pointer:
+
+```bash
+git add .gitmodules external/monero
+git commit -m "Use XCash Labs Core as LWS submodule"
+```
 
 ## License
 
 See [LICENSE](LICENSE).
-
-
-## Docker
-Data is stored at `/home/monero-lws/.bitmonero/light_wallet_server` by default,
-and be modified by `--db-path` at runtime.
-
-### Latest Stable Release
-Docker image for latest stable release can be fetched via:
-
-  * `docker pull ghcr.io/vtnerd/monero-lws`
-  * `docker pull vtnerd/monero-lws`
-
-Users of this tag should never expect a DB migration issue, provided they never
-"downgrade" to a prior major version.
-
-### Supported Releases
-Docker images for `0` and `0.3` are provided. The major number refers to
-backwards incompatible DB changes, and the minor revision refers to new features
-that could cause instability. Stability minded users can use these tags while
-they are still listed as officially supported here in the README or on the
-Docker overview page.
-
-  * `docker pull ghcr.io/vtnerd/monero-lws:0`
-  * `docker pull vtnerd/monero-lws:0`
-  * `docker pull ghcr.io/vtnerd/monero-lws:0.3`
-  * `docker pull vtnerd/monero-lws:0.3`
-
-### Alpha Release
-
-Docker image for the `master` (alpha) branch can be fetched via:
-
-  * `docker pull ghcr.io/vtnerd/monero-lws:master`
-  * `docker pull vtnerd/monero-lws:master`
-
-This branch differs from the `develop` branch in that users should NOT expect
-incompatible DB changes; if users never "roll-back" their copy of `master` then
-the DB should also be in a valid state for use. However, the `master` version
-is considered alpha software so things could break, resulting in complications
-if the DB was not saved prior to upgrading.
-
-We need alpha testers, so consider using this where possible!
-
-> The `develop` branch should only be used for development purposes - breaking
-> DB changes are expected (but probably rare). No docker image is provided for
-> this branch - see compilation section below.
-
-
-## Compiling Monero-lws from source
-
-### Dependencies
-
-The first step, when buiding from source, is installing the [dependencies of the
-monero project](https://github.com/monero-project/monero?tab=readme-ov-file#dependencies).
-`monero-lws` depends on the monero project for building, so the dependencies of
-that project become the dependencies of this project transitively. Only the
-"non-vendored" dependencies need to be installed. There are no additional
-dependencies that need installing.
-
-### Beginner Build
-
-The easiest method for building is to use git submodules to pull in the correct
-Monero project dependency:
-
-```bash
-git clone https://github.com/vtnerd/monero-lws.git
-mkdir monero-lws/build && cd monero-lws/build
-git submodule update --init --recursive
-cmake -DCMAKE_BUILD_TYPE=Release ../
-make -j$(nproc)
-```
-
-  * On macOS replace `-j$(nproc)` with `-j8` or the number of cores on your
-    system.
-  * Each branch (`master`, and `develop`) should have the correct submodule for
-    building that particular branch.
-  * The `submodule` step is being run inside of the `monero-lws` directory, such
-    that all of vendored dependencies are automatically fetched.
-  * The instructions above will compile the `master` (beta) release of
-    `monero-lws`
-  * The resulting executables can be found in `monero-lws/build/src`
-
-### Advanced Build
-
-The monero source and build directories can be manually specified, which cuts
-the build time in half and potentially re-uses the same source tree for multiple
-builds. The process for advanced building is:
-
-```bash
-git clone https://github.com/monero-project/monero.git
-git clone https://github.com/vtnerd/monero-lws.git
-mkdir monero-lws/build
-mkdir monero/build && cd monero/build
-git submodule update --init --recursive
-cmake -DCMAKE_BUILD_TYPE=Release ../
-make -j$(nproc) daemon multisig lmdb_lib
-cd ../../monero-lws/build
-cmake -DCMAKE_BUILD_TYPE=Relase -DMONERO_SOURCE_DIR=../../monero -DMONERO_BUILD_DIR=../../monero/build ../
-make -j$(nproc)
-```
-
-The `master`/`develop` branches of lws should compile against the `master`
-branch of monero. The release branches specify which monero branch to compile
-against - `release-v0.3_0.18` indicates that monero `0.18` should be used as
-the source directory. The [beginner build process](#beginner-build) handles all
-of this with git submodules.
-
-  * On macOS replace `-j$(nproc)` with `-j8` or the numebr of cores on your
-    system.
-  * Notice that the `submodule` step is only being run in the `monero` project;
-    `monero-lws` intentionally does not initialize submodules in the advanced
-    mode of building.
-  * The instructions above will compile the `master` (beta) release of
-    `monero-lws`.
-  * The resulting executables can be found in `build/src`
-
-## Running monero-lws-daemon
-
-The build places the binary in `src/` sub-directory within the build directory
-from which cmake was invoked (repository root by default). To run in
-foreground:
-
-```bash
-./src/monero-lws-daemon
-```
-
-To list all available options, run `./src/monero-lws-daemon --help`.
