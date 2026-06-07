@@ -867,7 +867,7 @@ namespace lws
       last_git_commit_hash(lws::version::commit),
       last_git_commit_date(lws::version::date),
       git_branch_name(lws::version::branch),
-      monero_version_full(MONERO_VERSION_FULL),
+      monero_version_full(XCASH_VERSION_FULL),
       blockchain_height(height),
       api(lws::version::api::combined),
       max_subaddresses(max_subaddresses),
